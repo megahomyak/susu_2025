@@ -2,6 +2,18 @@ import * as nodeHtmlParser from "node-html-parser";
 import * as fsPromises from "node:fs/promises";
 import * as path from "node:path";
 import * as fastCsv from "fast-csv";
+import TurndownService from "turndown";
+import * as htmlMinifierTerser from "html-minifier-terser";
+
+let turndown = (() => {
+    let turndown = new TurndownService();
+    return text => turndown.turndown(text);
+})();
+
+let minifyHtml = async chonkyHtml => await htmlMinifierTerser.minify(chonkyHtml, {
+    collapseWhitespace: true,
+    removeComments: true,
+});
 
 let make = async (filePath, maker) => {
     try { await fsPromises.stat(filePath); }
@@ -38,6 +50,9 @@ let parseAnyPage = text => {
         get text() {
             return el.textContent.trim();
         },
+        get innerHtml() {
+            return el.children.join("");
+        },
         get children() {
             return el.children.map(makeElement);
         },
@@ -48,7 +63,7 @@ let parseAnyPage = text => {
 
 let getEduProgramsUrls = mainPageRoot => mainPageRoot.findByClass("block-edu").map(el => el.findByClass("btn-action")[0].getAttribute("href"));
 
-let getEduProgramAttributes = eduProgramPageRoot => new Map(eduProgramPageRoot.findByClass("table-edu")[0].findByTag("tbody")[0].children.map(attr => [attr.findByTag("th")[0].text, attr.findByTag("td")[0].text]));
+let getEduProgramAttributes = async eduProgramPageRoot => new Map(await Promise.all(eduProgramPageRoot.findByClass("table-edu")[0].findByTag("tbody")[0].children.map(async attr => [attr.findByTag("th")[0].text, (await minifyHtml(attr.findByTag("td")[0].innerHtml))])));
 
 {
     let read = fsPromises.readFile;
@@ -64,7 +79,7 @@ let getEduProgramAttributes = eduProgramPageRoot => new Map(eduProgramPageRoot.f
             let eduProgramPath = await make(`edu_programs/${i}.html`, async filePath => {
                 await write(filePath, (await fetch(url)).body);
             });
-            let eduProgramAttributes = getEduProgramAttributes(parseAnyPage(await read(eduProgramPath, "utf8")));
+            let eduProgramAttributes = await getEduProgramAttributes(parseAnyPage(await read(eduProgramPath, "utf8")));
             eduProgramAttributes.set("URL", url);
             let eduProgramCols = [];
             for (let header of eduProgramsHeaders) {
