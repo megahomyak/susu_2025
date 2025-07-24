@@ -63,7 +63,7 @@ let parseAnyPage = text => {
 
 let getEduProgramsUrls = mainPageRoot => mainPageRoot.findByClass("block-edu").map(el => el.findByClass("btn-action")[0].getAttribute("href"));
 
-let getEduProgramAttributes = async eduProgramPageRoot => new Map(await Promise.all(eduProgramPageRoot.findByClass("table-edu")[0].findByTag("tbody")[0].children.map(async attr => [attr.findByTag("th")[0].text, (await minifyHtml(attr.findByTag("td")[0].innerHtml))])));
+let getEduProgramAttributes = async eduProgramPageRoot => new Map(await Promise.all(eduProgramPageRoot.findByClass("table-edu")[0].findByTag("tbody")[0].children.map(async attr => [attr.findByTag("th")[0].text, turndown(await minifyHtml(attr.findByTag("td")[0].innerHtml))])));
 
 {
     let read = fsPromises.readFile;
