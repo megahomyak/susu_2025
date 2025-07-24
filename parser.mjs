@@ -65,6 +65,7 @@ let getEduProgramAttributes = eduProgramPageRoot => new Map(eduProgramPageRoot.f
                 await write(filePath, (await fetch(url)).body);
             });
             let eduProgramAttributes = getEduProgramAttributes(parseAnyPage(await read(eduProgramPath, "utf8")));
+            eduProgramAttributes.set("URL", url);
             let eduProgramCols = [];
             for (let header of eduProgramsHeaders) {
                 let v = eduProgramAttributes.get(header);
